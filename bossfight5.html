@@ -152,7 +152,14 @@
         <div id="game-over-text"></div>
         <button id="replay-button">Play Again</button>
     </div>
-
+    <div id="charge-bar-container">
+        <div class="charge-level-marker" style="bottom: 33%;">2x</div>
+        <div class="charge-level-marker" style="bottom: 66%;">5x</div>
+        <div class="charge-level-marker" style="bottom: 100%;">10x</div>
+        <div id="charge-bar">
+            <div id="charge-fill"></div>
+        </div>
+    </div>
     <audio id="background-music" loop>
         <source src="Nocturnal_Showdown.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
@@ -225,14 +232,16 @@
         }
 
         #good-guy {
-            position: absolute;
-            width: 64px;
-            height: 64px;
-            background-color: #22c55e;
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
+    position: absolute;
+    width: 50px;      /* Reduced from 100px */
+    height: 75px;     /* Reduced from 150px */
+    background-image: url('wizard-spritesheet.png');
+    background-repeat: no-repeat;
+    background-size: 300px 225px;  /* Reduced from 600x450 */
+    background-color: transparent;
+    image-rendering: -webkit-optimize-contrast;
+    overflow: hidden;
+}
 
         #bad-guy {
             position: absolute;
@@ -288,6 +297,59 @@
             z-index: 1000;
         }
 
+        #charge-bar-container {
+    position: absolute;
+    top: 100px;
+    left: 25px;  /* Increased from 16px */
+    width: 30px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+}
+
+.charge-level-marker {
+    position: absolute;
+    right: 35px;
+    color: white;
+    font-size: 12px;
+    transform: translateY(50%);
+    white-space: nowrap;  /* Prevent text wrapping */
+}
+
+#charge-bar {
+    width: 30px;
+    height: 150px;
+    background-color: #1f2937;
+    border: 2px solid #4a1c1c;
+    position: relative;
+    overflow: hidden;
+}
+
+#charge-fill {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(to top, 
+        #3b82f6 0%, 
+        #818cf8 33%, 
+        #a855f7 66%, 
+        #ec4899 100%
+    );
+    transition: height 0.1s;
+}
+
+/* Add horizontal lines for level indicators */
+.charge-level-marker::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    width: 10px;
+    height: 2px;
+    background-color: #4a1c1c;
+    margin-left: 5px;
+}
         #replay-button {
             padding: 10px 20px;
             font-size: 1.5rem;
@@ -353,6 +415,16 @@
     20% { opacity: 1; }
     100% { opacity: 0; }
 }
+
+.charge-indicator {
+    position: absolute;
+    height: 4px;
+    background: linear-gradient(to right, #3b82f6, #ec4899);
+    bottom: -8px;
+    left: 0;
+    transition: width 0.1s;
+}
+
 </style>
 
 <script>
@@ -549,54 +621,53 @@ function usePotion() {
         }
 
         function loadImages() {
+    return new Promise((resolve) => {
+        function checkImage(url) {
             return new Promise((resolve) => {
-                
-            function checkImage(url) {
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    img.onload = () => resolve(url);
-                    img.onerror = () => resolve(null);
-                    img.src = url;
-                });
-            }
-            Promise.all([
-                checkImage('background.png'),
-                checkImage('goodguy.png'),
-                checkImage('badguy.png'),
-                checkImage('projectile.png'),
-                checkImage('boss-projectile.png')
-            ]).then(([backgroundImage, goodGuyImage, badGuyImage, projectileImage, bossProjectileImage]) => {
-                if (backgroundImage) {
-                    document.querySelector('.castle-background').style.backgroundImage = `url(${backgroundImage})`;
-                    document.querySelector('.castle').style.display = 'none';
-                }
-                if (goodGuyImage) {
-                    document.getElementById('good-guy').style.backgroundImage = `url(${goodGuyImage})`;
-                    document.getElementById('good-guy').style.backgroundColor = 'transparent';
-                }
-                if (badGuyImage) {
-                    document.getElementById('bad-guy').style.backgroundImage = `url(${badGuyImage})`;
-                    document.getElementById('bad-guy').style.backgroundColor = 'transparent';
-                }
-                if (projectileImage) {
-                    document.documentElement.style.setProperty('--projectile-image', `url(${projectileImage})`);
-                }
-                if (bossProjectileImage) {
-                    document.documentElement.style.setProperty('--boss-projectile-image', `url(${bossProjectileImage})`);
-                }
-                resolve();
-                }).catch(error => {
-                    console.error('Error loading images:', error);
-                    // Resolve anyway to not block game start
-                    resolve();
-                });
+                const img = new Image();
+                img.onload = () => resolve(url);
+                img.onerror = () => resolve(null);
+                img.src = url;
             });
         }
+        Promise.all([
+            checkImage('background.png'),
+            // Remove or comment out goodguy.png check
+            checkImage('badguy.png'),
+            checkImage('projectile.png'),
+            checkImage('boss-projectile.png')
+        ]).then(([backgroundImage, badGuyImage, projectileImage, bossProjectileImage]) => {
+            if (backgroundImage) {
+                document.querySelector('.castle-background').style.backgroundImage = `url(${backgroundImage})`;
+                document.querySelector('.castle').style.display = 'none';
+            }
+            // Remove the goodGuy image setting
+            if (badGuyImage) {
+                document.getElementById('bad-guy').style.backgroundImage = `url(${badGuyImage})`;
+                document.getElementById('bad-guy').style.backgroundColor = 'transparent';
+            }
+            if (projectileImage) {
+                document.documentElement.style.setProperty('--projectile-image', `url(${projectileImage})`);
+            }
+            if (bossProjectileImage) {
+                document.documentElement.style.setProperty('--boss-projectile-image', `url(${bossProjectileImage})`);
+            }
+            resolve();
+        }).catch(error => {
+            console.error('Error loading images:', error);
+            resolve();
+        });
+    });
+}
 
-        function resetGame() {
+function resetGame() {
+    // Remove any existing charge indicators
+    const existingIndicators = document.querySelectorAll('.charge-indicator');
+    existingIndicators.forEach(indicator => indicator.remove());
+
     gameState = {
         goodGuy: {
-            pos: { x: 100, y: window.innerHeight - 100 },
+            pos: { x: 100, y: window.innerHeight - 90 },
             vel: { x: 0, y: 0 },
             health: CONFIG.GG_INITIAL_HEALTH,
             lastDamaged: 0,
@@ -611,6 +682,20 @@ function usePotion() {
             isEnraged: false,
             rageEndTime: 0
         },
+        spriteState: {
+            currentFrame: 0,
+            frameCount: 18,
+            frameWidth: 50,
+            frameHeight: 75,
+            animationTimer: 0,
+            isRunning: false,
+            direction: 'right'
+        },
+        chargeState: {
+            charging: false,
+            chargeStartTime: 0,
+            currentCharge: 0
+        },
         projectiles: [],
         bossProjectiles: [],
         lastBossShot: Date.now(),
@@ -619,12 +704,14 @@ function usePotion() {
         isJumping: false,
         keysPressed: new Set(),
         gameLoop: null,
-        potions: CONFIG.INITIAL_POTIONS,  // Add these
+        potions: CONFIG.INITIAL_POTIONS,
         lastPotionDrop: 0,
         droppedPotions: []
     };
 
+    // Clear all existing projectiles and effects
     document.querySelectorAll('.projectile, .boss-projectile, .laser-beam').forEach(p => p.remove());
+    updateChargeBar(0);
     updatePotionCounter();
     updateHealthBars();
     elements.gameOver.style.display = 'none';
@@ -652,6 +739,13 @@ function usePotion() {
                 elements.badGuy.style.boxShadow = '';
             }, 3000);
         }
+
+        function updateChargeBar(percent) {
+    const chargeFill = document.getElementById('charge-fill');
+    if (chargeFill) {
+        chargeFill.style.height = `${percent}%`;
+    }
+}
 
         function updateBossMovement() {
             const now = Date.now();
@@ -716,71 +810,116 @@ function usePotion() {
         }
 
         function updatePositions() {
-            elements.goodGuy.style.transform = `translate(${gameState.goodGuy.pos.x}px, ${gameState.goodGuy.pos.y}px)`;
-            elements.badGuy.style.transform = `translate(${gameState.badGuy.pos.x}px, ${gameState.badGuy.pos.y}px)`;
-        }
+    const frame = gameState.spriteState.currentFrame;
+    const col = frame % 6;
+    const row = Math.floor(frame / 6);
+    const spriteX = -(col * 50);   // Reduced from 100
+    const spriteY = -(row * 75);   // Reduced from 150
+    const scaleX = gameState.spriteState.direction === 'left' ? -1 : 1;
+    
+    elements.goodGuy.style.transformOrigin = 'center';
+    elements.goodGuy.style.transform = `translate(${gameState.goodGuy.pos.x}px, ${gameState.goodGuy.pos.y}px) scaleX(${scaleX})`;
+    elements.goodGuy.style.backgroundPosition = `${spriteX}px ${spriteY}px`;
+    
+    elements.badGuy.style.transform = `translate(${gameState.badGuy.pos.x}px, ${gameState.badGuy.pos.y}px)`;
+}
 
         function updateHealthBars() {
             elements.goodGuyHealthBar.style.width = `${(gameState.goodGuy.health / CONFIG.GG_INITIAL_HEALTH) * 100}%`;
             elements.badGuyHealthBar.style.width = `${(gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH) * 100}%`;
         }
 
-        function fireProjectile(e) {
-            const projectile = document.createElement('div');
-            projectile.className = 'projectile';
-            document.body.appendChild(projectile);
-
-            const dx = e.clientX - gameState.goodGuy.pos.x;
-            const dy = e.clientY - gameState.goodGuy.pos.y;
-            const magnitude = Math.sqrt(dx * dx + dy * dy);
-
-            const projectileObj = {
-                element: projectile,
-                pos: { 
-                    x: gameState.goodGuy.pos.x + 32, 
-                    y: gameState.goodGuy.pos.y + 32 
-                },
-                vel: {
-                    x: (dx / magnitude) * CONFIG.PROJECTILE_SPEED,
-                    y: (dy / magnitude) * CONFIG.PROJECTILE_SPEED
-                }
-            };
-
-            gameState.projectiles.push(projectileObj);
-        }
-
-        function fireBossProjectile() {
-            const healthPercentage = gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH;
-            const sizeMultiplier = 1 + (2 * (1 - healthPercentage));
+        function fireProjectile(e, damage = 1, sizeMultiplier = 1, chargeLevel = 0) {
+    const projectile = document.createElement('div');
+    projectile.className = 'projectile';
     
-            const projectile = document.createElement('div');
-            projectile.className = 'boss-projectile';
-            projectile.style.width = `${32 * sizeMultiplier}px`;
-            projectile.style.height = `${32 * sizeMultiplier}px`;
-            document.body.appendChild(projectile);
+    // Scale the projectile size
+    const baseSize = 16; // Original projectile size
+    const newSize = baseSize * sizeMultiplier;
+    projectile.style.width = `${newSize}px`;
+    projectile.style.height = `${newSize}px`;
+    
+    // Add visual effects based on charge level
+    const chargeColors = [
+        '#3b82f6',  // Normal blue
+        '#818cf8',  // Level 1 charge (purple-blue)
+        '#a855f7',  // Level 2 charge (purple)
+        '#ec4899'   // Level 3 charge (pink)
+    ];
+    
+    projectile.style.backgroundColor = chargeColors[chargeLevel];
+    projectile.style.boxShadow = `0 0 ${10 * sizeMultiplier}px ${chargeColors[chargeLevel]}`;
+    
+    document.body.appendChild(projectile);
 
-            // Target slightly higher than center of the player model
-            const targetX = gameState.goodGuy.pos.x + 32; // Half of player width (64/2)
-            const targetY = gameState.goodGuy.pos.y + 28; // Adjusted from 32 to 28 for better accuracy
+    const dx = e.clientX - gameState.goodGuy.pos.x;
+    const dy = e.clientY - gameState.goodGuy.pos.y;
+    const magnitude = Math.sqrt(dx * dx + dy * dy);
 
-            const dx = targetX - (gameState.badGuy.pos.x + 80); // Adjust for boss center (160/2)
-            const dy = targetY - (gameState.badGuy.pos.y + 80);
-            const magnitude = Math.sqrt(dx * dx + dy * dy);
+    const projectileObj = {
+        element: projectile,
+        pos: { 
+            x: gameState.goodGuy.pos.x + 32, 
+            y: gameState.goodGuy.pos.y + 32 
+        },
+        vel: {
+            x: (dx / magnitude) * CONFIG.PROJECTILE_SPEED,
+            y: (dy / magnitude) * CONFIG.PROJECTILE_SPEED
+        },
+        damage: damage  // Store the damage value
+    };
 
-            const projectileObj = {
-                element: projectile,
-                pos: { 
-                    x: gameState.badGuy.pos.x + 80, // Start from boss center
-                    y: gameState.badGuy.pos.y + 80 
-                },
-                vel: {
-                    x: (dx / magnitude) * (CONFIG.PROJECTILE_SPEED * 0.75),
-                    y: (dy / magnitude) * (CONFIG.PROJECTILE_SPEED * 0.75)
-                }
-            };
+    gameState.projectiles.push(projectileObj);
+}
 
-            gameState.bossProjectiles.push(projectileObj);
-        }
+function fireBossProjectile() {
+    const healthPercentage = gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH;
+    const sizeMultiplier = 1 + (2 * (1 - healthPercentage));
+    
+    // Base rates
+    const baseTurnRate = 0.02;
+    const baseSpeed = CONFIG.PROJECTILE_SPEED * 0.6;
+    const turnRate = baseTurnRate * (1 + (1 - healthPercentage) * 0.5);
+    const trackingSpeed = baseSpeed * (1 + (1 - healthPercentage) * 0.3);
+
+    // Calculate distance to player
+    const dx = (gameState.goodGuy.pos.x + 32) - (gameState.badGuy.pos.x + 80);
+    const dy = (gameState.goodGuy.pos.y + 32) - (gameState.badGuy.pos.y + 80);
+    const distanceToPlayer = Math.sqrt(dx * dx + dy * dy);
+
+    // Calculate lifetime based on distance
+    const baseLifetime = 2500; // Base lifetime in ms
+    const distanceMultiplier = distanceToPlayer / 400; // Adjust divisor to tune scaling
+    const calculatedLifetime = Math.max(baseLifetime, baseLifetime * distanceMultiplier);
+
+    const projectile = document.createElement('div');
+    projectile.className = 'boss-projectile';
+    projectile.style.width = `${32 * sizeMultiplier}px`;
+    projectile.style.height = `${32 * sizeMultiplier}px`;
+    document.body.appendChild(projectile);
+
+    const initialAngle = Math.atan2(dy, dx);
+
+    const projectileObj = {
+        element: projectile,
+        pos: { 
+            x: gameState.badGuy.pos.x + 80, 
+            y: gameState.badGuy.pos.y + 80 
+        },
+        vel: {
+            x: Math.cos(initialAngle) * trackingSpeed,
+            y: Math.sin(initialAngle) * trackingSpeed
+        },
+        tracking: true,
+        trackingSpeed: trackingSpeed,
+        turnRate: turnRate,
+        creationTime: Date.now(),
+        lifetime: calculatedLifetime, // Dynamic lifetime
+        trackingDelay: 500
+    };
+
+    gameState.bossProjectiles.push(projectileObj);
+}
 
         function fireLaserSpread() {
     const centerAngle = Math.atan2(
@@ -820,7 +959,9 @@ function createLaserBeam(angle) {
     const distance = Math.abs(dx * Math.sin(angle) - dy * Math.cos(angle));
 
     if (distance < 30) { // Increased from 20 to match wider beams
-        gameState.goodGuy.health = Math.max(0, gameState.goodGuy.health - .5);
+        gameState.goodGuy.health = Math.max(0, gameState.goodGuy.health - .5
+
+        );
         updateHealthBars();
     }
 
@@ -830,121 +971,150 @@ function createLaserBeam(angle) {
     }, 1500); // Increased from 500ms
 }
 
-        function updateProjectiles() {
-            gameState.projectiles.forEach((projectile, index) => {
-                projectile.pos.x += projectile.vel.x;
-                projectile.pos.y += projectile.vel.y;
-                
-                if (projectile.pos.x < 0 || projectile.pos.x > window.innerWidth ||
-                    projectile.pos.y < 0 || projectile.pos.y > window.innerHeight) {
-                    projectile.element.remove();
-                    gameState.projectiles.splice(index, 1);
-                    return;
-                }
-
-                projectile.element.style.transform = `translate(${projectile.pos.x}px, ${projectile.pos.y}px)`;
-
-                const dx = projectile.pos.x - gameState.badGuy.pos.x;
-                const dy = projectile.pos.y - gameState.badGuy.pos.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < 40) {
-                    const previousHealth = gameState.badGuy.health;
-                    gameState.badGuy.health = Math.max(0, gameState.badGuy.health - 1);
-    
-                    // Check if we crossed a 10% threshold
-                    const previousPercentage = previousHealth / CONFIG.BG_INITIAL_HEALTH;
-                    const currentPercentage = gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH;
-                    const previousTenth = Math.ceil(previousPercentage * 10) / 10;
-                    const currentTenth = Math.ceil(currentPercentage * 10) / 10;
-    
-                    if (currentTenth < previousTenth) {
-                        triggerBossRage();
-                    }
-    
-                    projectile.element.remove();
-                    gameState.projectiles.splice(index, 1);
-                    updateHealthBars();
-                }
-            });
+function updateProjectiles() {
+    gameState.projectiles.forEach((projectile, index) => {
+        projectile.pos.x += projectile.vel.x;
+        projectile.pos.y += projectile.vel.y;
+        
+        if (projectile.pos.x < 0 || projectile.pos.x > window.innerWidth ||
+            projectile.pos.y < 0 || projectile.pos.y > window.innerHeight) {
+            projectile.element.remove();
+            gameState.projectiles.splice(index, 1);
+            return;
         }
 
-        function updateBossProjectiles() {
-            gameState.bossProjectiles.forEach((projectile, index) => {
-                projectile.pos.x += projectile.vel.x;
-                projectile.pos.y += projectile.vel.y;
-                
-                if (projectile.pos.x < 0 || projectile.pos.x > window.innerWidth ||
-                    projectile.pos.y < 0 || projectile.pos.y > window.innerHeight) {
-                    projectile.element.remove();
-                    gameState.bossProjectiles.splice(index, 1);
-                    return;
-                }
+        projectile.element.style.transform = `translate(${projectile.pos.x}px, ${projectile.pos.y}px)`;
 
-                projectile.element.style.transform = `translate(${projectile.pos.x}px, ${projectile.pos.y}px)`;
+        // Adjust hit detection for larger boss sprite
+        const dx = projectile.pos.x - (gameState.badGuy.pos.x + 80);
+        const dy = projectile.pos.y - (gameState.badGuy.pos.y + 80);
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-                const dx = projectile.pos.x - gameState.goodGuy.pos.x;
-                const dy = projectile.pos.y - gameState.goodGuy.pos.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < 40) {
+            const previousHealth = gameState.badGuy.health;
+            // Use the projectile's damage value instead of fixed 1
+            gameState.badGuy.health = Math.max(0, gameState.badGuy.health - projectile.damage);
 
-                if (distance < 40) {
-                    gameState.goodGuy.health = Math.max(0, gameState.goodGuy.health - 1);
-                    projectile.element.remove();
-                    gameState.bossProjectiles.splice(index, 1);
-                    updateHealthBars();
-                }
-            });
+            const previousPercentage = previousHealth / CONFIG.BG_INITIAL_HEALTH;
+            const currentPercentage = gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH;
+            const previousTenth = Math.ceil(previousPercentage * 10) / 10;
+            const currentTenth = Math.ceil(currentPercentage * 10) / 10;
+
+            if (currentTenth < previousTenth) {
+                triggerBossRage();
+            }
+
+            projectile.element.remove();
+            gameState.projectiles.splice(index, 1);
+            updateHealthBars();
         }
+    });
+}
+
+function updateBossProjectiles() {
+    gameState.bossProjectiles.forEach((projectile, index) => {
+        // Check lifetime
+        const aliveTime = Date.now() - projectile.creationTime;
+        if (aliveTime > projectile.lifetime) {
+            projectile.element.remove();
+            gameState.bossProjectiles.splice(index, 1);
+            return;
+        }
+
+        // Only track after initial delay and if tracking is enabled
+        if (projectile.tracking && aliveTime > projectile.trackingDelay) {
+            const dx = (gameState.goodGuy.pos.x + 32) - projectile.pos.x;
+            const dy = (gameState.goodGuy.pos.y + 32) - projectile.pos.y;
+            const angle = Math.atan2(dy, dx);
+
+            const currentAngle = Math.atan2(projectile.vel.y, projectile.vel.x);
+            let newAngle = currentAngle;
+            
+            if (Math.abs(angle - currentAngle) > 0.1) {
+                const diff = (angle - currentAngle + Math.PI * 3) % (Math.PI * 2) - Math.PI;
+                newAngle = currentAngle + Math.sign(diff) * projectile.turnRate;
+            }
+
+            projectile.vel.x = Math.cos(newAngle) * projectile.trackingSpeed;
+            projectile.vel.y = Math.sin(newAngle) * projectile.trackingSpeed;
+        }
+
+        // Rest of update code remains the same
+        projectile.pos.x += projectile.vel.x;
+        projectile.pos.y += projectile.vel.y;
+        
+        if (projectile.pos.x < 0 || projectile.pos.x > window.innerWidth ||
+            projectile.pos.y < 0 || projectile.pos.y > window.innerHeight) {
+            projectile.element.remove();
+            gameState.bossProjectiles.splice(index, 1);
+            return;
+        }
+
+        projectile.element.style.transform = `translate(${projectile.pos.x}px, ${projectile.pos.y}px)`;
+
+        const dx = projectile.pos.x - gameState.goodGuy.pos.x;
+        const dy = projectile.pos.y - gameState.goodGuy.pos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 40) {
+            gameState.goodGuy.health = Math.max(0, gameState.goodGuy.health - 1);
+            projectile.element.remove();
+            gameState.bossProjectiles.splice(index, 1);
+            updateHealthBars();
+        }
+    });
+}
 
         function gameLoop() {
-            if (gameState.keysPressed.has('a')) {
-                gameState.goodGuy.vel.x = -CONFIG.GOOD_GUY_SPEED;
-            } else if (gameState.keysPressed.has('d')) {
-                gameState.goodGuy.vel.x = CONFIG.GOOD_GUY_SPEED;
-            } else {
-                gameState.goodGuy.vel.x = 0;
-            }
+    // Handle movement
+    if (gameState.keysPressed.has('a')) {
+        gameState.goodGuy.vel.x = -CONFIG.GOOD_GUY_SPEED;
+    } else if (gameState.keysPressed.has('d')) {
+        gameState.goodGuy.vel.x = CONFIG.GOOD_GUY_SPEED;
+    } else {
+        gameState.goodGuy.vel.x = 0;
+    }
 
-            gameState.goodGuy.pos.x = Math.max(0, Math.min(window.innerWidth - 64,
-                gameState.goodGuy.pos.x + gameState.goodGuy.vel.x));
-            gameState.goodGuy.pos.y += gameState.goodGuy.vel.y;
+    // Update position with boundaries
+    gameState.goodGuy.pos.x = Math.max(0, Math.min(window.innerWidth - 64,
+        gameState.goodGuy.pos.x + gameState.goodGuy.vel.x));
+    gameState.goodGuy.pos.y += gameState.goodGuy.vel.y;
 
-            if (gameState.goodGuy.pos.y < window.innerHeight - 100) {
-                gameState.goodGuy.vel.y += CONFIG.GRAVITY;
-            } else {
-                gameState.goodGuy.pos.y = window.innerHeight - 100;
-                gameState.goodGuy.vel.y = 0;
-                gameState.goodGuy.jumpsRemaining = CONFIG.MAX_JUMPS;
-            }
+    if (gameState.goodGuy.pos.y < window.innerHeight - 90) { // Reduced from 180
+    gameState.goodGuy.vel.y += CONFIG.GRAVITY;
+} else {
+    gameState.goodGuy.pos.y = window.innerHeight - 90;
+    gameState.goodGuy.vel.y = 0;
+    gameState.goodGuy.jumpsRemaining = CONFIG.MAX_JUMPS;
+}
 
-            updateBossMovement();
-            checkPotionPickup();
-    
-            const now = Date.now();
+    updateBossMovement();
+    checkPotionPickup();
+    updateAnimation(); // Add this to handle sprite animation
+
+    const now = Date.now();
     const healthPercentage = gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH;
 
+    // Boss attack patterns
     if (healthPercentage <= 0.5) {
-        // Calculate phase timing
         const phaseTime = CONFIG.ATTACK_PHASE_DURATION + CONFIG.PHASE_TRANSITION_DELAY;
         const currentPhase = Math.floor((now % (phaseTime * 2)) / phaseTime);
         const timeInPhase = now % phaseTime;
         
-        if (timeInPhase < CONFIG.ATTACK_PHASE_DURATION) {  // Active attack period
-            if (currentPhase === 0) { // Projectile phase
+        if (timeInPhase < CONFIG.ATTACK_PHASE_DURATION) {
+            if (currentPhase === 0) {
                 if (now - gameState.lastBossShot > 750) {
                     fireBossProjectile();
                     gameState.lastBossShot = now;
                 }
-            } else { // Laser phase
+            } else {
                 if (now - gameState.lastLaserAttack > 1500) {
                     fireLaserSpread();
                     gameState.lastLaserAttack = now;
                 }
             }
         }
-        // During PHASE_TRANSITION_DELAY, no attacks are fired
     } else {
-        // Normal projectile attacks when above 50% health
         if (now - gameState.lastBossShot > 750) {
             fireBossProjectile();
             gameState.lastBossShot = now;
@@ -954,8 +1124,9 @@ function createLaserBeam(angle) {
     updateProjectiles();
     updateBossProjectiles();
 
-    const dx = gameState.goodGuy.pos.x - gameState.badGuy.pos.x;
-    const dy = gameState.goodGuy.pos.y - gameState.badGuy.pos.y;
+    // Collision detection with boss
+    const dx = (gameState.goodGuy.pos.x + 32) - (gameState.badGuy.pos.x + 80);
+    const dy = (gameState.goodGuy.pos.y + 48) - (gameState.badGuy.pos.y + 80);
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance < 60 && Date.now() - gameState.goodGuy.lastDamaged > CONFIG.DAMAGE_COOLDOWN) {
@@ -964,14 +1135,68 @@ function createLaserBeam(angle) {
         updateHealthBars();
     }
 
+    // Check win/lose condition
     if (gameState.goodGuy.health <= 0 || gameState.badGuy.health <= 0) {
         elements.gameOverText.textContent = gameState.goodGuy.health <= 0 ? 'Game Over!' : 'You Win!';
         elements.gameOver.style.display = 'flex';
         return;
     }
 
+    if (gameState.chargeState.charging) {
+        const chargeDuration = Date.now() - gameState.chargeState.chargeStartTime;
+        const chargePercent = Math.min(chargeDuration / 3000 * 100, 100);
+        
+        if (!document.querySelector('.charge-indicator')) {
+            const indicator = document.createElement('div');
+            indicator.className = 'charge-indicator';
+            elements.goodGuy.appendChild(indicator);
+        }
+        
+        document.querySelector('.charge-indicator').style.width = `${chargePercent}%`;
+    } else if (document.querySelector('.charge-indicator')) {
+        document.querySelector('.charge-indicator').remove();
+    }
+
+    if (gameState.chargeState.charging) {
+    const chargeDuration = Date.now() - gameState.chargeState.chargeStartTime;
+    const chargePercent = Math.min(chargeDuration / 3000 * 100, 100);
+    updateChargeBar(chargePercent);
+}
+
     updatePositions();
     gameState.gameLoop = requestAnimationFrame(gameLoop);
+}
+
+function updateAnimation() {
+    const now = Date.now();
+    const frameDelay = gameState.goodGuy.vel.x === 0 ? 150 : 100;
+
+    // Update direction based on velocity
+    if (gameState.goodGuy.vel.x > 0) {
+        gameState.spriteState.direction = 'right';
+    } else if (gameState.goodGuy.vel.x < 0) {
+        gameState.spriteState.direction = 'left';
+    }
+
+    if (now - gameState.spriteState.animationTimer > frameDelay) {
+        gameState.spriteState.animationTimer = now;
+        
+        // Calculate row and column for sprite sheet grid
+        const currentFrame = gameState.spriteState.currentFrame;
+        const row = Math.floor(currentFrame / 6);
+        const col = currentFrame % 6;
+        
+        if (Math.abs(gameState.goodGuy.vel.x) > 0) {
+            // Running frames (use second and third rows)
+            gameState.spriteState.currentFrame = (currentFrame + 1) % 18;
+            if (gameState.spriteState.currentFrame < 6) {
+                gameState.spriteState.currentFrame = 6; // Skip back to running frames
+            }
+        } else {
+            // Idle frames (use first row only)
+            gameState.spriteState.currentFrame = (currentFrame + 1) % 6;
+        }
+    }
 }
 
         function showMusicNotification(text) {
@@ -1021,22 +1246,45 @@ function createLaserBeam(angle) {
             }
         });
 
-        // Mouse click for projectiles
-        document.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') return;
-            fireProjectile(e);
-        });
+        elements.replayButton.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent the click from triggering other handlers
+    resetGame();
+});
 
-        elements.replayButton.addEventListener('click', resetGame);
+document.addEventListener('mousedown', (e) => {
+    if (e.target === elements.replayButton || elements.gameOver.style.display === 'flex') return;
+    gameState.chargeState.charging = true;
+    gameState.chargeState.chargeStartTime = Date.now();
+    updateChargeBar(0); // Reset charge bar
+});
 
-        elements.backgroundMusic.addEventListener('error', (e) => {
-            console.error('Audio loading error:', e);
-            console.log('Audio element state:', {
-                error: elements.backgroundMusic.error,
-                networkState: elements.backgroundMusic.networkState,
-                readyState: elements.backgroundMusic.readyState
-            });
-        });
+document.addEventListener('mouseup', (e) => {
+    if (e.target === elements.replayButton || elements.gameOver.style.display === 'flex' || !gameState.chargeState.charging) return;
+    
+    const chargeDuration = Date.now() - gameState.chargeState.chargeStartTime;
+    let chargeLevel = 0;
+    let damage = 1;
+    let sizeMultiplier = 1;
+    
+    if (chargeDuration >= 3000) {
+        chargeLevel = 3;
+        damage = 10;
+        sizeMultiplier = 6.0;
+    } else if (chargeDuration >= 2000) {
+        chargeLevel = 2;
+        damage = 5;
+        sizeMultiplier = 3.00;
+    } else if (chargeDuration >= 1000) {
+        chargeLevel = 1;
+        damage = 2;
+        sizeMultiplier = 1.5;
+    }
+    
+    fireProjectile(e, damage, sizeMultiplier, chargeLevel);
+    gameState.chargeState.charging = false;
+    gameState.chargeState.currentCharge = 0;
+    updateChargeBar(0); // Reset charge bar
+});
 
         // Initial setup
         initAudio();
