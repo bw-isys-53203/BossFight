@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gothic Castle Boss Fight</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background-color: black;
+            font-family: Arial, sans-serif;
+        }
+
+        .castle-background {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, #000000 0%, #1a1a2e 100%);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: -2;
+        }
+
+        .castle {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 20% 100%, #2a1b3d 0%, transparent 20%),
+                radial-gradient(circle at 80% 100%, #2a1b3d 0%, transparent 20%),
+                linear-gradient(to bottom, transparent 40%, #2a1b3d 40%, #2a1b3d 100%);
+            opacity: 0.7;
+            z-index: -1;
+            display: none;
+        }
+
+        .health-bar {
+            position: absolute;
+            width: 200px;
+            height: 24px;
+            background-color: #1f2937;
+            border: 2px solid #4a1c1c;
+            top: 16px;
+        }
+
+        .health-bar-fill {
+            height: 100%;
+            transition: width 0.2s;
+        }
+
+        #good-guy-health {
+            left: 16px;
+        }
+
+        #good-guy-health .health-bar-fill {
+            background-color: #22c55e;
+        }
+
+        #bad-guy-health {
+            right: 16px;
+        }
+
+        #bad-guy-health .health-bar-fill {
+            background-color: #dc2626;
+        }
+
+        #potion-counter {
+    position: absolute;
+    top: 50px;
+    left: 16px;
+    color: #22c55e;
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.health-potion {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #22c55e;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <div id="loading-title">Gothic Castle Boss Fight</div>
+        <div id="controls-list">
+            <div class="control-item">
+                <div class="key">A</div>
+                <div class="action">Move Left</div>
+            </div>
+            <div class="control-item">
+                <div class="key">D</div>
+                <div class="action">Move Right</div>
+            </div>
+            <div class="control-item">
+                <div class="key">Spacebar</div>
+                <div class="action">Jump (can double jump)</div>
+            </div>
+            <div class="control-item">
+                <div class="key">Mouse1</div>
+                <div class="action">Shoot</div>
+            </div>
+            <div class="control-item">
+                <div class="key">Tab</div>
+                <div class="action">Music Toggle</div>
+            </div>
+            <div class="control-item">
+                <div class="key">Q</div>
+                <div class="action">Use Potion</div>
+            </div>
+        </div>
+        <div id="loading-progress">
+            <div id="loading-bar"></div>
+        </div>
+    </div>
+    <div class="castle-background"></div>
+    <div class="castle"></div>
+
+    <div id="good-guy-health" class="health-bar">
+        <div class="health-bar-fill" style="width: 100%"></div>
+    </div>
+    <div id="bad-guy-health" class="health-bar">
+        <div class="health-bar-fill" style="width: 100%"></div>
+    </div>
+
+    <div id="potion-counter">
+        Potions: <span id="potion-count">3</span>
+    </div>
+
+    <div id="good-guy"></div>
+    <div id="bad-guy"></div>
+    
+    <div id="game-over">
+        <div id="game-over-text"></div>
+        <button id="replay-button">Play Again</button>
+    </div>
+
+    <audio id="background-music" loop>
+        <source src="Nocturnal_Showdown.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <div id="music-notification" class="hidden"></div>
+<style>
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.95);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            font-family: Arial, sans-serif;
+        }
+
+        #loading-title {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #dc2626;
+            text-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+        }
+
+        #controls-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .key {
+            background-color: #4a1c1c;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            min-width: 100px;
+            text-align: center;
+            border: 1px solid #dc2626;
+        }
+
+        .action {
+            color: #d1d5db;
+        }
+
+        #loading-progress {
+            width: 200px;
+            height: 4px;
+            background-color: #4a1c1c;
+            margin-top: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #loading-bar {
+            position: absolute;
+            height: 100%;
+            background-color: #dc2626;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        #good-guy {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            background-color: #22c55e;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        #bad-guy {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            background-color: #dc2626;
+            border-radius: 50%;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+            transition: outline 0.3s, box-shadow 0.3s;
+        }
+
+        .projectile {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #3b82f6;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-image: var(--projectile-image);
+        }
+
+        .boss-projectile {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            background-color: #dc2626;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #dc2626;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-image: var(--boss-projectile-image);
+        }
+
+        #game-over {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.75);
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        #replay-button {
+            padding: 10px 20px;
+            font-size: 1.5rem;
+            background-color: #4a1c1c;
+            color: white;
+            border: 2px solid #dc2626;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #replay-button:hover {
+            background-color: #dc2626;
+        }
+        #sound-controls {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+
+        #music-notification {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #music-notification.visible {
+            opacity: 1;
+        }
+
+        #music-notification.hidden {
+            opacity: 0;
+        }
+
+        .laser-beam {
+    position: absolute;
+    width: 8px;
+    height: 1200px;
+    background: linear-gradient(90deg, 
+        rgba(255,68,0,0) 0%, 
+        rgba(255,68,0,0.2) 20%,
+        rgba(255,68,0,0.8) 50%, 
+        rgba(255,68,0,0.2) 80%,
+        rgba(255,68,0,0) 100%);
+    transform-origin: top center;
+    animation: fadeOut 1.5s forwards;
+    box-shadow: 0 0 10px #ff4400, 0 0 20px #ff4400;
+    pointer-events: none;
+    z-index: 100;
+}
+
+@keyframes fadeOut {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    100% { opacity: 0; }
+}
+</style>
+
+<script>
+        const CONFIG = {
+            GRAVITY: 0.5,
+            JUMP_FORCE: -12,
+            GOOD_GUY_SPEED: 6,
+            BAD_GUY_SPEED: 5,
+            PROJECTILE_SPEED: 8,
+            GG_INITIAL_HEALTH: 3,
+            BG_INITIAL_HEALTH: 50,
+	        DAMAGE_COOLDOWN: 1000,
+            MAX_JUMPS: 2,
+            ATTACK_PHASE_DURATION: 3000, // How long each attack phase lasts
+            PHASE_TRANSITION_DELAY: 2500, // Delay between phases
+            INITIAL_POTIONS: 3,
+            POTION_DROP_COOLDOWN: 30000 // 30 seconds
+        };
+
+        let gameState = {
+            goodGuy: {
+                pos: { x: 100, y: window.innerHeight - 100 },
+                vel: { x: 0, y: 0 },
+                health: CONFIG.GG_INITIAL_HEALTH,
+                lastDamaged: 0,
+                jumpsRemaining: CONFIG.MAX_JUMPS
+            },
+            badGuy: {
+                pos: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+                targetPos: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+                health: CONFIG.BG_INITIAL_HEALTH,
+                moveTimer: 0,
+                lastRageThreshold: 1.0,
+                isEnraged: false,
+                rageEndTime: 0
+            },
+            projectiles: [],
+            bossProjectiles: [],
+            lastBossShot: 0,
+            isJumping: false,
+            keysPressed: new Set(),
+            gameLoop: null,
+            potions: CONFIG.INITIAL_POTIONS,
+            lastPotionDrop: 0,
+            droppedPotions: [], // Array to track potion objects on ground
+        };
+
+        const elements = {
+            goodGuy: document.getElementById('good-guy'),
+            badGuy: document.getElementById('bad-guy'),
+            goodGuyHealthBar: document.querySelector('#good-guy-health .health-bar-fill'),
+            badGuyHealthBar: document.querySelector('#bad-guy-health .health-bar-fill'),
+            gameOver: document.getElementById('game-over'),
+            gameOverText: document.getElementById('game-over-text'),
+            replayButton: document.getElementById('replay-button'),
+            backgroundMusic: document.getElementById('background-music'),
+            musicToggle: document.getElementById('music-toggle')
+        };
+
+        async function initGame() {
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingBar = document.getElementById('loading-bar');
+            let progress = 0;
+
+            // Create a promise that resolves after 5 seconds
+            const timerPromise = new Promise(resolve => {
+                const interval = setInterval(() => {
+                    progress += 2; // Increment every 100ms
+                    loadingBar.style.width = `${progress}%`;
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 100);
+            });
+
+            // Create a promise for audio loading
+            const audioPromise = new Promise((resolve) => {
+                elements.backgroundMusic.addEventListener('canplaythrough', () => {
+                    resolve();
+                });
+                elements.backgroundMusic.load();
+            });
+
+            // Create a promise for image loading
+            const imagePromise = loadImages();
+
+            // Wait for all promises to resolve
+            try {
+                await Promise.all([timerPromise, audioPromise, imagePromise]);
+                loadingScreen.style.display = 'none';
+                resetGame();
+            } catch (error) {
+                console.error('Error during loading:', error);
+                // Still start the game even if there's an error
+                loadingScreen.style.display = 'none';
+                resetGame();
+            }
+        }
+
+        function updatePotionCounter() {
+            document.getElementById('potion-count').textContent = gameState.potions;
+        }
+
+        function createPotionDrop() {
+    const potion = document.createElement('div');
+    potion.className = 'health-potion';
+    document.body.appendChild(potion);
+
+    const potionObj = {
+        element: potion,
+        pos: {
+            x: gameState.badGuy.pos.x + 80,
+            y: gameState.badGuy.pos.y + 80
+        }
+    };
+
+    potion.style.transform = `translate(${potionObj.pos.x}px, ${potionObj.pos.y}px)`;
+    gameState.droppedPotions.push(potionObj);
+}
+
+function checkPotionPickup() {
+    const playerCenterX = gameState.goodGuy.pos.x + 32;
+    const playerCenterY = gameState.goodGuy.pos.y + 32;
+
+    gameState.droppedPotions.forEach((potion, index) => {
+        const dx = playerCenterX - potion.pos.x;
+        const dy = playerCenterY - potion.pos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 40) {
+            gameState.potions++;
+            potion.element.remove();
+            gameState.droppedPotions.splice(index, 1);
+            updatePotionCounter();
+        }
+    });
+}
+
+function usePotion() {
+    if (gameState.potions > 0) {
+        gameState.goodGuy.health = CONFIG.GG_INITIAL_HEALTH;
+        gameState.potions--;
+        updatePotionCounter();
+        updateHealthBars();
+    }
+}
+
+        function initAudio() {
+            if (!elements.backgroundMusic) {
+                console.error('Background music element not found');
+                return;
+            }
+            
+            // Load the audio file and set initial pause state
+            elements.backgroundMusic.load();
+            elements.backgroundMusic.pause();
+        }
+
+        function toggleMusic() {
+            if (!elements.backgroundMusic) return;
+            
+            try {
+                if (elements.backgroundMusic.paused) {
+                    const playPromise = elements.backgroundMusic.play();
+                    if (playPromise !== undefined) {
+                        playPromise
+                            .then(() => {
+                                console.log('Music started successfully');
+                                showMusicNotification('Music: On');
+                            })
+                            .catch(error => {
+                                // If first play fails, try one more time
+                                console.error('First play attempt failed:', error);
+                                elements.backgroundMusic.play()
+                                    .then(() => {
+                                        console.log('Second play attempt successful');
+                                        showMusicNotification('Music: On');
+                                    })
+                                    .catch(error => {
+                                        console.error('Audio play failed:', error);
+                                        showMusicNotification('Error: Music failed to play');
+                                    });
+                            });
+                    }
+                } else {
+                    elements.backgroundMusic.pause();
+                    console.log('Music paused successfully');
+                    showMusicNotification('Music: Off');
+                }
+            } catch (error) {
+                console.error('Audio toggle error:', error);
+            }
+        }
+
+        function loadImages() {
+            return new Promise((resolve) => {
+                
+            function checkImage(url) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve(url);
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            }
+            Promise.all([
+                checkImage('background.png'),
+                checkImage('goodguy.png'),
+                checkImage('badguy.png'),
+                checkImage('projectile.png'),
+                checkImage('boss-projectile.png')
+            ]).then(([backgroundImage, goodGuyImage, badGuyImage, projectileImage, bossProjectileImage]) => {
+                if (backgroundImage) {
+                    document.querySelector('.castle-background').style.backgroundImage = `url(${backgroundImage})`;
+                    document.querySelector('.castle').style.display = 'none';
+                }
+                if (goodGuyImage) {
+                    document.getElementById('good-guy').style.backgroundImage = `url(${goodGuyImage})`;
+                    document.getElementById('good-guy').style.backgroundColor = 'transparent';
+                }
+                if (badGuyImage) {
+                    document.getElementById('bad-guy').style.backgroundImage = `url(${badGuyImage})`;
+                    document.getElementById('bad-guy').style.backgroundColor = 'transparent';
+                }
+                if (projectileImage) {
+                    document.documentElement.style.setProperty('--projectile-image', `url(${projectileImage})`);
+                }
+                if (bossProjectileImage) {
+                    document.documentElement.style.setProperty('--boss-projectile-image', `url(${bossProjectileImage})`);
+                }
+                resolve();
+                }).catch(error => {
+                    console.error('Error loading images:', error);
+                    // Resolve anyway to not block game start
+                    resolve();
+                });
+            });
+        }
+
+        function resetGame() {
+    gameState = {
+        goodGuy: {
+            pos: { x: 100, y: window.innerHeight - 100 },
+            vel: { x: 0, y: 0 },
+            health: CONFIG.GG_INITIAL_HEALTH,
+            lastDamaged: 0,
+            jumpsRemaining: CONFIG.MAX_JUMPS
+        },
+        badGuy: {
+            pos: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+            targetPos: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+            health: CONFIG.BG_INITIAL_HEALTH,
+            moveTimer: 0,
+            lastRageThreshold: 1.0,
+            isEnraged: false,
+            rageEndTime: 0
+        },
+        projectiles: [],
+        bossProjectiles: [],
+        lastBossShot: Date.now(),
+        lastLaserAttack: Date.now(),
+        phaseStartTime: Date.now(),
+        isJumping: false,
+        keysPressed: new Set(),
+        gameLoop: null,
+        potions: CONFIG.INITIAL_POTIONS,  // Add these
+        lastPotionDrop: 0,
+        droppedPotions: []
+    };
+
+    document.querySelectorAll('.projectile, .boss-projectile, .laser-beam').forEach(p => p.remove());
+    updatePotionCounter();
+    updateHealthBars();
+    elements.gameOver.style.display = 'none';
+    gameLoop();
+}
+</script>
+
+<script>
+        function triggerBossRage() {
+            gameState.badGuy.isEnraged = true;
+            gameState.badGuy.rageEndTime = Date.now() + 3000; // 3 seconds
+
+            if (Date.now() - gameState.lastPotionDrop >= CONFIG.POTION_DROP_COOLDOWN) {
+        createPotionDrop();
+        gameState.lastPotionDrop = Date.now();
+    }
+
+            // Add visual effect to boss
+            elements.badGuy.style.outline = '3px solid #ff4400';
+            elements.badGuy.style.boxShadow = '0 0 20px #ff4400';
+    
+            setTimeout(() => {
+                gameState.badGuy.isEnraged = false;
+                elements.badGuy.style.outline = '';
+                elements.badGuy.style.boxShadow = '';
+            }, 3000);
+        }
+
+        function updateBossMovement() {
+            const now = Date.now();
+            const healthPercentage = gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH;
+
+            // Check for rage trigger
+            const currentThreshold = Math.ceil(healthPercentage * 10) / 10;
+            if (currentThreshold < gameState.badGuy.lastRageThreshold) {
+                gameState.badGuy.lastRageThreshold = currentThreshold;
+                triggerBossRage();
+            }
+
+            // Adjust movement based on state
+            if (now - gameState.badGuy.moveTimer > 2000 || gameState.badGuy.isEnraged) {
+                let margin = gameState.badGuy.isEnraged ? 100 : 200;
+                let newX, newY;
+                
+                if (gameState.badGuy.isEnraged) {
+                    // During rage, make more extreme movements
+                    // Either dart to edges or make very large position changes
+                    if (Math.random() < 0.5) {
+                        // Move to edges
+                        newX = Math.random() < 0.5 ? margin : window.innerWidth - margin;
+                        newY = Math.random() * (window.innerHeight - margin * 2) + margin;
+                    } else {
+                        // Make large position changes
+                        const angle = Math.random() * Math.PI * 2;
+                        const distance = Math.random() * (window.innerWidth / 2) + window.innerWidth / 4;
+                        newX = Math.max(margin, Math.min(window.innerWidth - margin, 
+                            gameState.badGuy.pos.x + Math.cos(angle) * distance));
+                        newY = Math.max(margin, Math.min(window.innerHeight - margin, 
+                            gameState.badGuy.pos.y + Math.sin(angle) * distance));
+                    }
+                } else {
+                    // Normal movement: more controlled but still unpredictable
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * 300 + 100; // Move 100-400 pixels
+                    newX = Math.max(margin, Math.min(window.innerWidth - margin, 
+                        gameState.badGuy.pos.x + Math.cos(angle) * distance));
+                    newY = Math.max(margin, Math.min(window.innerHeight - margin, 
+                        gameState.badGuy.pos.y + Math.sin(angle) * distance));
+                }
+
+                gameState.badGuy.targetPos = { x: newX, y: newY };
+                gameState.badGuy.moveTimer = now;
+            }
+
+            // Adjust speed based on rage state and health
+            const baseSpeed = CONFIG.BAD_GUY_SPEED;
+            const healthMultiplier = 1 + (1 - healthPercentage); // Speed up as health decreases
+            const rageMultiplier = gameState.badGuy.isEnraged ? 2 : 1; // Double speed during rage
+            const currentSpeed = baseSpeed * healthMultiplier * rageMultiplier;
+
+            const dx = gameState.badGuy.targetPos.x - gameState.badGuy.pos.x;
+            const dy = gameState.badGuy.targetPos.y - gameState.badGuy.pos.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 1) {
+                gameState.badGuy.pos.x += (dx / distance) * currentSpeed;
+                gameState.badGuy.pos.y += (dy / distance) * currentSpeed;
+            }
+        }
+
+        function updatePositions() {
+            elements.goodGuy.style.transform = `translate(${gameState.goodGuy.pos.x}px, ${gameState.goodGuy.pos.y}px)`;
+            elements.badGuy.style.transform = `translate(${gameState.badGuy.pos.x}px, ${gameState.badGuy.pos.y}px)`;
+        }
+
+        function updateHealthBars() {
+            elements.goodGuyHealthBar.style.width = `${(gameState.goodGuy.health / CONFIG.GG_INITIAL_HEALTH) * 100}%`;
+            elements.badGuyHealthBar.style.width = `${(gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH) * 100}%`;
+        }
+
+        function fireProjectile(e) {
+            const projectile = document.createElement('div');
+            projectile.className = 'projectile';
+            document.body.appendChild(projectile);
+
+            const dx = e.clientX - gameState.goodGuy.pos.x;
+            const dy = e.clientY - gameState.goodGuy.pos.y;
+            const magnitude = Math.sqrt(dx * dx + dy * dy);
+
+            const projectileObj = {
+                element: projectile,
+                pos: { 
+                    x: gameState.goodGuy.pos.x + 32, 
+                    y: gameState.goodGuy.pos.y + 32 
+                },
+                vel: {
+                    x: (dx / magnitude) * CONFIG.PROJECTILE_SPEED,
+                    y: (dy / magnitude) * CONFIG.PROJECTILE_SPEED
+                }
+            };
+
+            gameState.projectiles.push(projectileObj);
+        }
+
+        function fireBossProjectile() {
+            const healthPercentage = gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH;
+            const sizeMultiplier = 1 + (2 * (1 - healthPercentage));
+    
+            const projectile = document.createElement('div');
+            projectile.className = 'boss-projectile';
+            projectile.style.width = `${32 * sizeMultiplier}px`;
+            projectile.style.height = `${32 * sizeMultiplier}px`;
+            document.body.appendChild(projectile);
+
+            // Target slightly higher than center of the player model
+            const targetX = gameState.goodGuy.pos.x + 32; // Half of player width (64/2)
+            const targetY = gameState.goodGuy.pos.y + 28; // Adjusted from 32 to 28 for better accuracy
+
+            const dx = targetX - (gameState.badGuy.pos.x + 80); // Adjust for boss center (160/2)
+            const dy = targetY - (gameState.badGuy.pos.y + 80);
+            const magnitude = Math.sqrt(dx * dx + dy * dy);
+
+            const projectileObj = {
+                element: projectile,
+                pos: { 
+                    x: gameState.badGuy.pos.x + 80, // Start from boss center
+                    y: gameState.badGuy.pos.y + 80 
+                },
+                vel: {
+                    x: (dx / magnitude) * (CONFIG.PROJECTILE_SPEED * 0.75),
+                    y: (dy / magnitude) * (CONFIG.PROJECTILE_SPEED * 0.75)
+                }
+            };
+
+            gameState.bossProjectiles.push(projectileObj);
+        }
+
+        function fireLaserSpread() {
+    const centerAngle = Math.atan2(
+        gameState.goodGuy.pos.y + 32 - (gameState.badGuy.pos.y + 80),
+        gameState.goodGuy.pos.x + 32 - (gameState.badGuy.pos.x + 80)
+    );
+    
+    // Create 7 beams with wider spread (70 degrees total)
+    for (let i = -3; i <= 3; i++) {
+        const angle = centerAngle + (i * Math.PI / 18); // 10 degrees = PI/18
+        // Add slight delay between each laser for wave effect
+        setTimeout(() => {
+            createLaserBeam(angle);
+        }, i * 100); // 100ms delay between each laser
+    }
+}
+
+function createLaserBeam(angle) {
+    const laser = document.createElement('div');
+    laser.className = 'laser-beam';
+    document.body.appendChild(laser);
+
+    const startX = gameState.badGuy.pos.x + 80;
+    const startY = gameState.badGuy.pos.y + 80;
+
+    // Convert the angle to degrees and adjust for CSS rotation
+    const rotationDegrees = (angle * (180 / Math.PI)) - 90;
+    
+    laser.style.transform = `translate(${startX}px, ${startY}px) rotate(${rotationDegrees}deg)`;
+
+    // Wider hit detection to match visual size
+    const playerCenterX = gameState.goodGuy.pos.x + 32;
+    const playerCenterY = gameState.goodGuy.pos.y + 32;
+
+    const dx = playerCenterX - startX;
+    const dy = playerCenterY - startY;
+    const distance = Math.abs(dx * Math.sin(angle) - dy * Math.cos(angle));
+
+    if (distance < 30) { // Increased from 20 to match wider beams
+        gameState.goodGuy.health = Math.max(0, gameState.goodGuy.health - .5);
+        updateHealthBars();
+    }
+
+    // Remove the laser after longer animation
+    setTimeout(() => {
+        laser.remove();
+    }, 1500); // Increased from 500ms
+}
+
+        function updateProjectiles() {
+            gameState.projectiles.forEach((projectile, index) => {
+                projectile.pos.x += projectile.vel.x;
+                projectile.pos.y += projectile.vel.y;
+                
+                if (projectile.pos.x < 0 || projectile.pos.x > window.innerWidth ||
+                    projectile.pos.y < 0 || projectile.pos.y > window.innerHeight) {
+                    projectile.element.remove();
+                    gameState.projectiles.splice(index, 1);
+                    return;
+                }
+
+                projectile.element.style.transform = `translate(${projectile.pos.x}px, ${projectile.pos.y}px)`;
+
+                const dx = projectile.pos.x - gameState.badGuy.pos.x;
+                const dy = projectile.pos.y - gameState.badGuy.pos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 40) {
+                    const previousHealth = gameState.badGuy.health;
+                    gameState.badGuy.health = Math.max(0, gameState.badGuy.health - 1);
+    
+                    // Check if we crossed a 10% threshold
+                    const previousPercentage = previousHealth / CONFIG.BG_INITIAL_HEALTH;
+                    const currentPercentage = gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH;
+                    const previousTenth = Math.ceil(previousPercentage * 10) / 10;
+                    const currentTenth = Math.ceil(currentPercentage * 10) / 10;
+    
+                    if (currentTenth < previousTenth) {
+                        triggerBossRage();
+                    }
+    
+                    projectile.element.remove();
+                    gameState.projectiles.splice(index, 1);
+                    updateHealthBars();
+                }
+            });
+        }
+
+        function updateBossProjectiles() {
+            gameState.bossProjectiles.forEach((projectile, index) => {
+                projectile.pos.x += projectile.vel.x;
+                projectile.pos.y += projectile.vel.y;
+                
+                if (projectile.pos.x < 0 || projectile.pos.x > window.innerWidth ||
+                    projectile.pos.y < 0 || projectile.pos.y > window.innerHeight) {
+                    projectile.element.remove();
+                    gameState.bossProjectiles.splice(index, 1);
+                    return;
+                }
+
+                projectile.element.style.transform = `translate(${projectile.pos.x}px, ${projectile.pos.y}px)`;
+
+                const dx = projectile.pos.x - gameState.goodGuy.pos.x;
+                const dy = projectile.pos.y - gameState.goodGuy.pos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 40) {
+                    gameState.goodGuy.health = Math.max(0, gameState.goodGuy.health - 1);
+                    projectile.element.remove();
+                    gameState.bossProjectiles.splice(index, 1);
+                    updateHealthBars();
+                }
+            });
+        }
+
+        function gameLoop() {
+            if (gameState.keysPressed.has('a')) {
+                gameState.goodGuy.vel.x = -CONFIG.GOOD_GUY_SPEED;
+            } else if (gameState.keysPressed.has('d')) {
+                gameState.goodGuy.vel.x = CONFIG.GOOD_GUY_SPEED;
+            } else {
+                gameState.goodGuy.vel.x = 0;
+            }
+
+            gameState.goodGuy.pos.x = Math.max(0, Math.min(window.innerWidth - 64,
+                gameState.goodGuy.pos.x + gameState.goodGuy.vel.x));
+            gameState.goodGuy.pos.y += gameState.goodGuy.vel.y;
+
+            if (gameState.goodGuy.pos.y < window.innerHeight - 100) {
+                gameState.goodGuy.vel.y += CONFIG.GRAVITY;
+            } else {
+                gameState.goodGuy.pos.y = window.innerHeight - 100;
+                gameState.goodGuy.vel.y = 0;
+                gameState.goodGuy.jumpsRemaining = CONFIG.MAX_JUMPS;
+            }
+
+            updateBossMovement();
+            checkPotionPickup();
+    
+            const now = Date.now();
+    const healthPercentage = gameState.badGuy.health / CONFIG.BG_INITIAL_HEALTH;
+
+    if (healthPercentage <= 0.5) {
+        // Calculate phase timing
+        const phaseTime = CONFIG.ATTACK_PHASE_DURATION + CONFIG.PHASE_TRANSITION_DELAY;
+        const currentPhase = Math.floor((now % (phaseTime * 2)) / phaseTime);
+        const timeInPhase = now % phaseTime;
+        
+        if (timeInPhase < CONFIG.ATTACK_PHASE_DURATION) {  // Active attack period
+            if (currentPhase === 0) { // Projectile phase
+                if (now - gameState.lastBossShot > 750) {
+                    fireBossProjectile();
+                    gameState.lastBossShot = now;
+                }
+            } else { // Laser phase
+                if (now - gameState.lastLaserAttack > 1500) {
+                    fireLaserSpread();
+                    gameState.lastLaserAttack = now;
+                }
+            }
+        }
+        // During PHASE_TRANSITION_DELAY, no attacks are fired
+    } else {
+        // Normal projectile attacks when above 50% health
+        if (now - gameState.lastBossShot > 750) {
+            fireBossProjectile();
+            gameState.lastBossShot = now;
+        }
+    }
+
+    updateProjectiles();
+    updateBossProjectiles();
+
+    const dx = gameState.goodGuy.pos.x - gameState.badGuy.pos.x;
+    const dy = gameState.goodGuy.pos.y - gameState.badGuy.pos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < 60 && Date.now() - gameState.goodGuy.lastDamaged > CONFIG.DAMAGE_COOLDOWN) {
+        gameState.goodGuy.health = Math.max(0, gameState.goodGuy.health - 1);
+        gameState.goodGuy.lastDamaged = Date.now();
+        updateHealthBars();
+    }
+
+    if (gameState.goodGuy.health <= 0 || gameState.badGuy.health <= 0) {
+        elements.gameOverText.textContent = gameState.goodGuy.health <= 0 ? 'Game Over!' : 'You Win!';
+        elements.gameOver.style.display = 'flex';
+        return;
+    }
+
+    updatePositions();
+    gameState.gameLoop = requestAnimationFrame(gameLoop);
+}
+
+        function showMusicNotification(text) {
+            const notification = document.getElementById('music-notification');
+            notification.textContent = text;
+            notification.classList.remove('hidden');
+            notification.classList.add('visible');
+
+            // Remove the notification after 2 seconds
+            setTimeout(() => {
+                notification.classList.remove('visible');
+                notification.classList.add('hidden');
+            }, 2000);
+        }
+
+
+        document.addEventListener('keydown', (e) => {
+            gameState.keysPressed.add(e.key.toLowerCase());
+            
+            if (e.code === 'Space' && gameState.goodGuy.jumpsRemaining > 0) {
+                // Make second jump slightly weaker
+                if (gameState.goodGuy.jumpsRemaining === 1) {  // This is the second jump
+                    gameState.goodGuy.vel.y = CONFIG.JUMP_FORCE * 0.8;
+                } else {  // This is the first jump
+                    gameState.goodGuy.vel.y = CONFIG.JUMP_FORCE;
+                }
+                gameState.goodGuy.jumpsRemaining--;
+            }
+        });
+
+        // Key release
+        document.addEventListener('keyup', (e) => {
+            gameState.keysPressed.delete(e.key.toLowerCase());
+        });
+
+        document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'q') {
+        usePotion();
+    }
+});
+
+        // Music toggle (separate from movement controls)
+        document.addEventListener('keydown', function handleMusicToggle(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                toggleMusic();
+            }
+        });
+
+        // Mouse click for projectiles
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            fireProjectile(e);
+        });
+
+        elements.replayButton.addEventListener('click', resetGame);
+
+        elements.backgroundMusic.addEventListener('error', (e) => {
+            console.error('Audio loading error:', e);
+            console.log('Audio element state:', {
+                error: elements.backgroundMusic.error,
+                networkState: elements.backgroundMusic.networkState,
+                readyState: elements.backgroundMusic.readyState
+            });
+        });
+
+        // Initial setup
+        initAudio();
+        initGame();
+    </script>
+</body>
+</html>
